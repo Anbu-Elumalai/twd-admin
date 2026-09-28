@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ChevronDown,
@@ -20,8 +21,11 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
+  Settings,
+  Users,
 } from "lucide-react";
 import { useModule, ModuleType } from "@/context/ModuleContext";
+import { TwicLogo } from "@/components/common/TwicLogo";
 
 interface ChildModule {
   title: string;
@@ -51,8 +55,8 @@ export function TopNavigationBar({
   const pathname = usePathname();
   const router = useRouter();
   const { activeModule, setActiveModule } = useModule();
-  const [hoveredMenu, setHoveredMenu] = useState<ModuleType | null>(null);
-  const [activeSubParentTitle, setActiveSubParentTitle] = useState<string>("DFR");
+  const [openMenu, setOpenMenu] = useState<ModuleType | null>(null);
+  const [activeSubParentTitle, setActiveSubParentTitle] = useState<string>("Detailed Feasibility Report");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navRef = useRef<HTMLDivElement>(null);
 
@@ -98,14 +102,14 @@ export function TopNavigationBar({
       defaultHref: "/advisory",
       subParents: [
         {
-          title: "DFR",
+          title: "Detailed Feasibility Report",
           children: [
             { title: "Enquiry / RFQ", href: "/enquiries" },
             { title: "Preparation of Costing", href: "/costings" },
           ],
         },
         {
-          title: "DPR",
+          title: "Detailed Project Report",
           children: [
             { title: "RFP / Tender Upload Status", href: "/tenders" },
             { title: "LOA / Work Order received from Client", href: "/work-orders" },
@@ -129,7 +133,6 @@ export function TopNavigationBar({
             { title: "Feasibility Studies & Approvals", href: "/advisory" },
           ],
         },
-
       ],
     },
     {
@@ -150,16 +153,51 @@ export function TopNavigationBar({
           title: "Consultancy Logistics",
           children: [
             { title: "Approval Note for engaging Expert / Manpower & Vehicle / Guesthouse", href: "/pmc" },
-            { title: "Monthly Report", href: "/reports" },
             { title: "Milestone Status", href: "/milestones" },
           ],
         },
+      ],
+    },
+    {
+      id: "PROJECT_MONITORING",
+      title: "PROJECT MONITORING",
+      defaultHref: "/progress",
+      subParents: [
         {
-          title: "Work / Project Monitoring Status",
+          title: "Project Monitoring",
           children: [
-            { title: "Work Progress / Report Preparation Status", href: "/progress" },
-            { title: "Invoice Status - Subcontractor", href: "/invoices" },
-            { title: "Invoice Status - Client", href: "/invoices" },
+            { title: "Work Progress", href: "/progress" },
+            { title: "Report Preparation", href: "/reports" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "SUBCONTRACTOR",
+      title: "SUBCONTRACTOR",
+      defaultHref: "/subcontractors",
+      subParents: [
+        {
+          title: "Subcontractor",
+          children: [
+            { title: "Subcontractors Dashboard", href: "/subcontractors" },
+            { title: "Work Progress", href: "/subcontractors/progress" },
+            { title: "Subcontractors Directory", href: "/subcontractors" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "INVOICING_PAYMENTS",
+      title: "INVOICING & PAYMENTS",
+      defaultHref: "/invoices",
+      subParents: [
+        {
+          title: "Invoicing & Payments",
+          children: [
+            { title: "Invoicing Dashboard", href: "/invoices" },
+            { title: "Client Invoices", href: "/invoices/client" },
+            { title: "Subcontractor Invoices", href: "/invoices/subcontractor" },
             { title: "Payment Status", href: "/payments" },
           ],
         },
@@ -188,42 +226,27 @@ export function TopNavigationBar({
         },
       ],
     },
-    {
-      id: "USER_MANAGEMENT",
-      title: "USER MANAGEMENT",
-      defaultHref: "/user-management",
-      subParents: [
-        {
-          title: "Users Management",
-          children: [
-            { title: "Users Directory", href: "/users" },
-            { title: "Add New User Account", href: "/users/new" },
-          ],
-        },
-        {
-          title: "Roles & Permissions",
-          children: [
-            { title: "Role & Authorization Matrix", href: "/roles" },
-            { title: "Create New Security Role", href: "/roles/new" },
-          ],
-        },
-        {
-          title: "Governance & Settings",
-          children: [
-            { title: "User Management Hub", href: "/user-management" },
-            { title: "Audit Trail & System Logs", href: "/audit-logs" },
-            { title: "System Settings", href: "/settings" },
-          ],
-        },
-      ],
-    },
   ];
 
-  // Set default active sub-parent when menu is hovered
+  // Open menu on hover
   const handleMenuHover = (sec: TopMenuSection) => {
-    setHoveredMenu(sec.id);
+    setOpenMenu(sec.id);
     if (sec.subParents.length > 0) {
       setActiveSubParentTitle(sec.subParents[0].title);
+    }
+  };
+
+  // Toggle menu on click/tap (supports touch, device emulation, and click navigation)
+  const handleMenuToggle = (e: React.MouseEvent, sec: TopMenuSection) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (openMenu === sec.id) {
+      setOpenMenu(null);
+    } else {
+      setOpenMenu(sec.id);
+      if (sec.subParents.length > 0) {
+        setActiveSubParentTitle(sec.subParents[0].title);
+      }
     }
   };
 
@@ -231,7 +254,7 @@ export function TopNavigationBar({
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (navRef.current && !navRef.current.contains(event.target as Node)) {
-        setHoveredMenu(null);
+        setOpenMenu(null);
         setIsProfileOpen(false);
       }
     }
@@ -241,14 +264,14 @@ export function TopNavigationBar({
 
   // Close on route change
   useEffect(() => {
-    setHoveredMenu(null);
+    setOpenMenu(null);
     setIsProfileOpen(false);
     setMobileMenuOpen(false);
   }, [pathname]);
 
   const handleSelectModule = (modId: ModuleType, defaultHref: string) => {
     setActiveModule(modId);
-    setHoveredMenu(null);
+    setOpenMenu(null);
     router.push(defaultHref);
   };
 
@@ -305,64 +328,87 @@ export function TopNavigationBar({
     .join("");
 
   // Find currently active section and sub-parent for flyout
-  const currentSection = menuSections.find((s) => s.id === hoveredMenu);
+  const currentSection = menuSections.find((s) => s.id === openMenu);
   const currentSubParent = currentSection?.subParents.find(
     (sp) => sp.title === activeSubParentTitle
   ) || currentSection?.subParents[0];
 
   return (
     <header ref={navRef} className="relative z-50 w-full select-none">
-      {/* Top Banner (Government Identification Header) */}
-      <div className="bg-[#001733] border-b border-[#00264d] text-white px-4 py-2 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shadow-xs">
-              <Droplets className="w-4 h-4" />
+      {/* Top Banner (Government Identification Header) - Full Width & Proper Height */}
+      <div className="bg-[#001733] border-b border-[#00264d] text-white px-6 sm:px-8 lg:px-10 py-5 sm:py-6 min-h-[96px] sm:min-h-[104px] flex items-center justify-between w-full">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <Link href="/dashboard" className="flex items-center gap-3.5 sm:gap-4 group">
+            {/* Original White TWIC Logo Card */}
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-white p-2 flex items-center justify-center shadow-lg ring-2 ring-white/10 transition-transform group-hover:scale-105 shrink-0">
+              <Image
+                src="/twic-logo.png"
+                alt="TWIC Project ERP Logo"
+                width={56}
+                height={56}
+                className="w-full h-full object-contain"
+                priority
+              />
             </div>
             <div>
-              <div className="text-xs font-bold tracking-wide uppercase text-slate-100 flex items-center gap-2">
-                <span>TWIC Project Tracker</span>
-                <span className="text-[10px] px-1.5 py-0.2 bg-blue-800/80 text-blue-200 rounded font-mono font-normal">
+              <div className="text-lg sm:text-2xl font-black tracking-tight text-white flex items-center gap-3">
+                <span className="tracking-wide">TWIC Project ERP</span>
+                <span className="text-xs px-2.5 py-0.5 bg-blue-800/90 text-blue-100 border border-blue-600/40 rounded-lg font-mono font-semibold hidden sm:inline-block shadow-xs">
                   Govt. of Tamil Nadu
                 </span>
               </div>
-              <div className="text-[10px] text-slate-400 font-normal leading-none hidden sm:block">
-                Water & Infrastructure Project Management ERP
+              <div className="text-xs sm:text-sm text-slate-300 font-medium leading-normal hidden sm:block mt-0.5">
+                Water &amp; Infrastructure Project Management ERP
               </div>
             </div>
           </Link>
         </div>
 
-        {/* Right Info: Profile, Login, Logout, Change Password */}
-        <div className="flex items-center gap-3 text-xs">
+        {/* Right Info: Settings, Profile, Login, Logout */}
+        <div className="flex items-center gap-3 sm:gap-4 text-xs">
+          {/* Quick Settings Gear Link */}
+          <Link
+            href="/settings"
+            className="p-2 text-slate-300 hover:text-white rounded-xl hover:bg-white/10 transition-colors hidden sm:flex items-center justify-center border border-white/10"
+            title="System Settings"
+            aria-label="System Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </Link>
+
           {isLoggedIn ? (
             <div className="relative">
               {/* Profile Avatar & Name Trigger Button */}
               <button
                 type="button"
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-2 p-1 pl-2 pr-2.5 rounded-xl hover:bg-white/10 transition-colors border border-transparent hover:border-blue-900/60 cursor-pointer"
+                aria-expanded={isProfileOpen}
+                aria-haspopup="true"
+                className="flex items-center gap-3 p-1.5 pl-2.5 pr-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/15 hover:border-blue-400/40 cursor-pointer shadow-md"
               >
-                <div className="w-7 h-7 rounded-full bg-blue-600 border border-blue-400/40 flex items-center justify-center text-[11px] font-black text-white shadow-xs">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-blue-700 to-blue-500 border border-blue-300/40 flex items-center justify-center text-xs sm:text-sm font-bold text-white shadow-xs shrink-0">
                   {userInitials || "TW"}
                 </div>
                 <div className="text-left hidden sm:block leading-tight">
-                  <span className="text-white text-xs font-bold block truncate max-w-[140px]">
+                  <span className="text-white text-xs sm:text-sm font-bold block truncate max-w-[170px]">
                     {userName}
                   </span>
-                  <span className="text-slate-400 text-[10px] font-mono block">
+                  <span className="text-blue-200 text-xs font-mono block">
                     {userRole === "SUPER_ADMIN" ? "Super Admin" : userRole}
                   </span>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-300 transition-transform duration-200 ${isProfileOpen ? "rotate-180" : ""}`} />
               </button>
 
               {/* Profile Popover Dropdown */}
               {isProfileOpen && (
-                <div className="absolute right-0 top-11 bg-white text-slate-800 shadow-2xl border border-slate-200 rounded-2xl w-64 py-2 z-50 animate-in fade-in slide-in-from-top-2">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-2 bg-white text-slate-800 shadow-2xl border border-slate-200 rounded-2xl w-64 py-2 z-50 animate-in fade-in slide-in-from-top-2"
+                >
+                  <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50/70">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-full bg-blue-700 text-white font-black text-xs flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-full bg-blue-700 text-white font-bold text-xs flex items-center justify-center">
                         {userInitials || "TW"}
                       </div>
                       <div className="truncate">
@@ -374,7 +420,7 @@ export function TopNavigationBar({
                         </div>
                       </div>
                     </div>
-                    <div className="mt-2.5 flex items-center gap-1.5">
+                    <div className="mt-2 flex items-center gap-1.5">
                       <span className="px-2 py-0.5 text-[9px] font-mono font-bold bg-blue-100 text-blue-800 rounded">
                         {userRole}
                       </span>
@@ -387,6 +433,7 @@ export function TopNavigationBar({
                   <div className="py-1 text-xs">
                     <Link
                       href="/profile"
+                      role="menuitem"
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-blue-900 font-medium transition-colors"
                     >
@@ -396,6 +443,7 @@ export function TopNavigationBar({
 
                     <button
                       type="button"
+                      role="menuitem"
                       onClick={() => {
                         setIsProfileOpen(false);
                         setIsChangePasswordOpen(true);
@@ -408,6 +456,7 @@ export function TopNavigationBar({
 
                     <Link
                       href="/audit-logs"
+                      role="menuitem"
                       onClick={() => setIsProfileOpen(false)}
                       className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-slate-50 hover:text-blue-900 font-medium transition-colors"
                     >
@@ -416,9 +465,44 @@ export function TopNavigationBar({
                     </Link>
                   </div>
 
+                  {/* Administrative Utilities Section (Moved from Main Nav to Relieve Crowding) */}
+                  <div className="py-1 text-xs border-t border-slate-100">
+                    <div className="px-4 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Administration &amp; System
+                    </div>
+                    <Link
+                      href="/user-management"
+                      role="menuitem"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-blue-50 hover:text-[#002244] font-medium transition-colors"
+                    >
+                      <Users className="w-4 h-4 text-blue-600" />
+                      <span>User Management &amp; Access</span>
+                    </Link>
+                    <Link
+                      href="/roles"
+                      role="menuitem"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-blue-50 hover:text-[#002244] font-medium transition-colors"
+                    >
+                      <Shield className="w-4 h-4 text-slate-500" />
+                      <span>Roles &amp; Permissions</span>
+                    </Link>
+                    <Link
+                      href="/settings"
+                      role="menuitem"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex items-center gap-2.5 px-4 py-2 text-slate-700 hover:bg-blue-50 hover:text-[#002244] font-medium transition-colors"
+                    >
+                      <Settings className="w-4 h-4 text-slate-500" />
+                      <span>System Preferences</span>
+                    </Link>
+                  </div>
+
                   <div className="pt-1 border-t border-slate-100 px-2">
                     <button
                       type="button"
+                      role="menuitem"
                       onClick={handleLogout}
                       className="w-full text-left flex items-center gap-2 px-3 py-2 text-rose-700 hover:bg-rose-50 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
                     >
@@ -432,7 +516,7 @@ export function TopNavigationBar({
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-xs"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Sign In / Login</span>
@@ -442,7 +526,8 @@ export function TopNavigationBar({
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-1 text-slate-300 hover:text-white"
+            aria-label="Toggle navigation menu"
+            className="md:hidden p-2 text-slate-300 hover:text-white rounded-lg hover:bg-white/10"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -450,14 +535,14 @@ export function TopNavigationBar({
       </div>
 
       {/* Primary Horizontal Government Menu Bar (Exact MCA Style with vertical separators '|') */}
-      <nav className="bg-[#002244] border-b border-[#003366] text-white hidden md:block">
-        <div className="flex items-stretch overflow-visible">
+      <nav className="bg-[#002244] border-b border-[#003366] text-white hidden md:block w-full relative z-40 overflow-visible" aria-label="Main Navigation">
+        <div className="flex items-stretch overflow-visible px-4 sm:px-6 lg:px-8 w-full min-h-[44px]">
           {/* HOME Tab */}
           <Link
             href="/dashboard"
-            className={`flex items-center gap-1.5 px-5 py-2.5 text-xs font-bold tracking-wide transition-all whitespace-nowrap uppercase ${
+            className={`flex items-center gap-2 px-4 sm:px-5 lg:px-6 py-2.5 text-xs sm:text-[13px] font-bold tracking-wider transition-all whitespace-nowrap uppercase ${
               pathname === "/dashboard"
-                ? "bg-[#003870] text-white border-b-2 border-amber-400"
+                ? "bg-[#003870] text-white border-b-2 border-amber-400 shadow-inner"
                 : "text-slate-200 hover:bg-[#002c59] hover:text-white"
             }`}
           >
@@ -467,89 +552,149 @@ export function TopNavigationBar({
           {/* Vertical Divider */}
           <div className="w-[1px] bg-[#003870] my-2" />
 
-          {/* Module Tabs (ADVISORY, PMC, O&M, USER MANAGEMENT) */}
+          {/* Module Tabs (ADVISORY, PMC, PROJECT MONITORING, SUBCONTRACTOR, INVOICING & PAYMENTS, O&M) */}
           {menuSections.map((sec, idx) => {
             const isSelected = activeModule === sec.id;
-            const isHovered = hoveredMenu === sec.id;
+            const isMenuOpen = openMenu === sec.id;
+            const isRightSide = idx >= menuSections.length - 2;
 
             return (
               <React.Fragment key={sec.id}>
                 {idx > 0 && <div className="w-[1px] bg-[#003870] my-2" />}
 
                 <div
-                  className="relative group"
+                  className="relative group flex items-stretch"
                   onMouseEnter={() => handleMenuHover(sec)}
-                  onMouseLeave={() => setHoveredMenu(null)}
+                  onMouseLeave={() => setOpenMenu(null)}
                 >
                   <button
                     type="button"
                     onClick={() => handleSelectModule(sec.id, sec.defaultHref)}
-                    className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold tracking-wide transition-all whitespace-nowrap uppercase cursor-pointer ${
+                    aria-expanded={isMenuOpen}
+                    aria-haspopup="true"
+                    className={`flex items-center gap-1.5 px-3 sm:px-4 lg:px-5 xl:px-5.5 py-2.5 text-xs sm:text-[13px] font-bold tracking-wider transition-all whitespace-nowrap uppercase cursor-pointer select-none ${
                       isSelected
-                        ? "bg-[#003870] text-white border-b-2 border-amber-400"
+                        ? "bg-[#003870] text-white border-b-2 border-amber-400 shadow-inner"
                         : "text-slate-200 hover:bg-[#002c59] hover:text-white"
                     }`}
                   >
                     <span>{sec.title}</span>
-                    <ChevronDown
-                      className={`w-3 h-3 transition-transform ${
-                        isHovered || isSelected ? "rotate-180 text-amber-400" : "text-slate-400"
-                      }`}
-                    />
+                    <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMenuToggle(e, sec);
+                      }}
+                      className="p-0.5 hover:text-amber-300 rounded"
+                      title={`Toggle ${sec.title} menu`}
+                    >
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                          isMenuOpen
+                            ? "rotate-180 text-amber-400"
+                            : isSelected
+                            ? "text-amber-400"
+                            : "text-slate-400"
+                        }`}
+                      />
+                    </span>
                   </button>
 
-                  {/* Cascading Sub-parent & Child Flyout Menu (aligned directly next to active base parent) */}
-                  {isHovered && (
+                  {/* Cascading Sub-parent & Child Flyout Menu */}
+                  {isMenuOpen && (
                     <div
-                      className="absolute left-0 top-full bg-[#f8f9fa] border border-slate-300 shadow-xl rounded-b-md w-64 py-0.5 z-50 animate-in fade-in slide-in-from-top-1"
+                      role="menu"
+                      className={`absolute ${
+                        isRightSide ? "right-0" : "left-0"
+                      } top-full bg-[#f8f9fa] border border-slate-300 shadow-2xl rounded-b-lg py-1 z-50 animate-in fade-in slide-in-from-top-1 before:absolute before:-top-3 before:left-0 before:right-0 before:h-3 before:content-[''] ${
+                        sec.subParents.length === 1 ? "w-64" : "w-72 sm:w-80"
+                      }`}
                     >
-                      {sec.subParents.map((sp) => {
-                        const isActive = activeSubParentTitle === sp.title;
-
-                        return (
-                          <div
-                            key={sp.title}
-                            onMouseEnter={() => setActiveSubParentTitle(sp.title)}
-                            className="relative group/parent"
-                          >
-                            <div
-                              className={`px-4 py-2.5 text-xs font-semibold cursor-pointer flex items-center justify-between border-b border-slate-200/70 last:border-b-0 transition-colors ${
-                                isActive
-                                  ? "bg-[#002b5f] text-white font-bold shadow-xs"
-                                  : "text-slate-700 hover:bg-slate-200/80 hover:text-slate-900"
-                              }`}
-                            >
-                              <span className="truncate">{sp.title}</span>
-                              <ChevronRight
-                                className={`w-3.5 h-3.5 shrink-0 ${
-                                  isActive ? "text-white" : "text-slate-400"
-                                }`}
-                              />
-                            </div>
-
-                            {/* Child Flyout Menu positioned directly adjacent to this base parent item */}
-                            {isActive && sp.children && sp.children.length > 0 && (
-                              <div className="absolute left-full top-0 w-auto min-w-[240px] max-w-md bg-white border border-slate-300 shadow-xl rounded-r-md rounded-bl-md py-0.5 flex flex-col z-50 animate-in fade-in slide-in-from-left-1">
-                                <div className="divide-y divide-slate-100">
-                                  {sp.children.map((child) => (
-                                    <Link
-                                      key={child.title}
-                                      href={child.href}
-                                      onClick={() => {
-                                        setActiveModule(sec.id);
-                                        setHoveredMenu(null);
-                                      }}
-                                      className="block px-4 py-2.5 text-xs font-medium text-slate-800 hover:bg-slate-100 hover:text-[#002244] transition-colors whitespace-nowrap"
-                                    >
-                                      {child.title}
-                                    </Link>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
+                      {sec.subParents.length === 1 ? (
+                        // Clean direct dropdown for single-category modules
+                        <div>
+                          <div className="px-3.5 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200/70">
+                            <span>{sec.subParents[0].title}</span>
                           </div>
-                        );
-                      })}
+                          <div className="divide-y divide-slate-100 py-0.5">
+                            {sec.subParents[0].children.map((child) => (
+                              <Link
+                                key={child.title}
+                                href={child.href}
+                                role="menuitem"
+                                onClick={() => {
+                                  setActiveModule(sec.id);
+                                  setOpenMenu(null);
+                                }}
+                                className="block px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-[#002b5f] hover:text-white transition-colors"
+                              >
+                                {child.title}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        // 2-tier cascading MCA style flyout for multi-category modules (ADVISORY, PMC, O&M)
+                        sec.subParents.map((sp) => {
+                          const isActive = activeSubParentTitle === sp.title;
+
+                          return (
+                            <div
+                              key={sp.title}
+                              onMouseEnter={() => setActiveSubParentTitle(sp.title)}
+                              className="relative group/parent"
+                            >
+                              <div
+                                className={`px-4 py-2 text-xs font-semibold cursor-pointer flex items-center justify-between border-b border-slate-200/70 last:border-b-0 transition-colors ${
+                                  isActive
+                                    ? "bg-[#002b5f] text-white font-bold shadow-xs"
+                                    : "text-slate-700 hover:bg-slate-200/80 hover:text-slate-900"
+                                }`}
+                              >
+                                <span className="truncate">{sp.title}</span>
+                                <ChevronRight
+                                  className={`w-3.5 h-3.5 shrink-0 ${
+                                    isActive
+                                      ? isRightSide
+                                        ? "rotate-180 text-white"
+                                        : "text-white"
+                                      : "text-slate-400"
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Child Flyout Menu positioned directly adjacent to this base parent item */}
+                              {isActive && sp.children && sp.children.length > 0 && (
+                                <div
+                                  role="menu"
+                                  className={`absolute ${
+                                    isRightSide ? "right-full mr-0.5" : "left-full ml-0.5"
+                                  } top-0 w-auto min-w-[260px] max-w-md bg-white border border-slate-300 shadow-2xl rounded-md py-1 flex flex-col z-50 animate-in fade-in`}
+                                >
+                                  <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <span>{sp.title}</span>
+                                  </div>
+                                  <div className="divide-y divide-slate-100">
+                                    {sp.children.map((child) => (
+                                      <Link
+                                        key={child.title}
+                                        href={child.href}
+                                        role="menuitem"
+                                        onClick={() => {
+                                          setActiveModule(sec.id);
+                                          setOpenMenu(null);
+                                        }}
+                                        className="block px-4 py-2 text-xs font-medium text-slate-800 hover:bg-blue-50 hover:text-[#002244] transition-colors whitespace-nowrap"
+                                      >
+                                        {child.title}
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   )}
                 </div>
@@ -557,19 +702,21 @@ export function TopNavigationBar({
             );
           })}
 
-          {/* Master Flow Map Link */}
-          <div className="w-[1px] bg-[#003870] my-2" />
-          <Link
-            href="/overview"
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold tracking-wide transition-all whitespace-nowrap uppercase ${
-              pathname === "/overview"
-                ? "bg-[#003870] text-white border-b-2 border-amber-400"
-                : "text-slate-300 hover:bg-[#002c59] hover:text-white"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5 text-amber-400" />
-            <span>Master Flow Map</span>
-          </Link>
+          {/* Master Flow Map Utility Pill Button */}
+          <div className="ml-auto flex items-center pl-4 pr-1">
+            <Link
+              href="/overview"
+              className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs sm:text-[13px] font-semibold transition-all ${
+                pathname === "/overview"
+                  ? "bg-blue-600 text-white shadow-xs border border-blue-400 font-bold"
+                  : "bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 hover:text-white border border-white/15"
+              }`}
+              title="Master Flow Map & Architecture"
+            >
+              <Layers className="w-3.5 h-3.5 text-blue-300" />
+              <span>Master Flow Map</span>
+            </Link>
+          </div>
         </div>
       </nav>
 
@@ -744,8 +891,36 @@ export function TopNavigationBar({
             </div>
           ))}
 
+          {/* Mobile Master Flow Map & Admin Links */}
+          <div className="pt-2 border-t border-blue-950 space-y-1">
+            <Link
+              href="/overview"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-2 py-1.5 text-xs font-semibold text-amber-300 hover:bg-white/10 rounded"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Master Flow Map</span>
+            </Link>
+            <Link
+              href="/user-management"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-300 hover:bg-white/10 rounded"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>User Management</span>
+            </Link>
+            <Link
+              href="/settings"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-2 py-1.5 text-xs text-slate-300 hover:bg-white/10 rounded"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>System Settings</span>
+            </Link>
+          </div>
+
           {/* Mobile Profile & Logout */}
-          <div className="pt-3 border-t border-blue-900">
+          <div className="pt-2 border-t border-blue-900">
             <Link
               href="/profile"
               onClick={() => setMobileMenuOpen(false)}
